@@ -53,25 +53,25 @@ use std::time::Duration;
 use ansi_escapes::{CursorLeft, CursorPrevLine, EraseDown};
 
 fn redraw(ansi: bool, state: &impl Display) {
-    let stderr = std::io::stderr();
-    let mut stderr = stderr.lock();
-    let contents = format!("{}", state);
     if ansi {
-        let line_count = contents.chars().filter(|c| *c == '\n').count();
-        write!(&mut stderr, "{}{}{}", EraseDown, contents, CursorLeft).unwrap();
-        for _ in 0..line_count {
-            write!(&mut stderr, "{}", CursorPrevLine).unwrap();
+        let stderr = std::io::stderr();
+        let mut stderr = stderr.lock();
+        let mut buf = Vec::new();
+        write!(&mut buf, "{}{}{}", EraseDown, state, CursorLeft).unwrap();
+        let nb_lines = buf.iter().filter(|c| **c == '\n' as u8).count();
+        for _ in 0..nb_lines {
+            write!(&mut buf, "{}", CursorPrevLine).unwrap();
         }
+        stderr.write_all(&buf).unwrap();
+        stderr.flush().unwrap();
     } else {
-        writeln!(&mut stderr, "{}", contents).unwrap();
+        eprintln!("{}", state);
     }
 }
 
 fn clear(ansi: bool) {
     if ansi {
-        let stderr = std::io::stderr();
-        let mut stderr = stderr.lock();
-        write!(&mut stderr, "{}", EraseDown).unwrap();
+        eprint!("{}", EraseDown);
     }
 }
 
